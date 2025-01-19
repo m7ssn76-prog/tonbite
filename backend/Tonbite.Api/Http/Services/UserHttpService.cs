@@ -1,5 +1,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.IdentityModel.Tokens;
@@ -10,21 +11,20 @@ using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegiste
 
 namespace Tonbite.Api.Http.Services;
 
-public class IdentityHttpService : IIdentityHttpService
+public class UserHttpService : IUserHttpService
 {
     private readonly IConfiguration _configuration;
     private readonly ApplicationDbContext _context;
 
-    public IdentityHttpService(IConfiguration configuration, ApplicationDbContext context)
+    public UserHttpService(IConfiguration configuration, ApplicationDbContext context)
     {
         _configuration = configuration;
         _context = context;
     }
 
-    public string GenerateToken(int userId, string email, string isAdmin)
+    public string GenerateAccessToken(int userId, string email, string isAdmin)
     {
-        var tokenLifetime = TimeSpan.FromHours(8);
-        
+       
         var claims = new List<Claim>
         {
             new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
@@ -42,11 +42,12 @@ public class IdentityHttpService : IIdentityHttpService
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
+        
         var token = new JwtSecurityToken(
-            issuer: _configuration["ClientBaseUrl"],
-            audience: _configuration["ServerBaseUrl"],
+            issuer: _configuration["ServerBaseUrl"],
+            audience: _configuration["ClientBaseUrl"],
             claims: claims,
-            expires: DateTime.UtcNow.Add(tokenLifetime),
+            expires: DateTime.UtcNow.AddMinutes(15),
             signingCredentials: credentials
         );
 
@@ -54,16 +55,19 @@ public class IdentityHttpService : IIdentityHttpService
         return tokenHandler.WriteToken(token);
     }
 
+    public string GenerateRefreshToken()
+    {
+        var randomNumber = new byte[32];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
+        return Convert.ToBase64String(randomNumber);
+    }
+
     public void Create(UserRegister form)
     {
         var passwordHasher = new PasswordHasher<User>();
         
-        var user = new User
-        {
-            Username = form.Username,
-            Email = form.Email,
-            Bio = form.Bio,
-        };
+        var user = new User { Email = form.Email };
 
         var role = new Role
         {

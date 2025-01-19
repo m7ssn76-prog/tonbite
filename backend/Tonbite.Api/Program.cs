@@ -19,11 +19,10 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddTransient<IConfigureOptions<SwaggerGenOptions>, ConfigureSwaggerOptions>();
 
 // Http Services
-builder.Services.AddScoped<IIdentityHttpService, IdentityHttpService>();
+builder.Services.AddScoped<IUserHttpService, UserHttpService>();
 
 // JWT
 var jwtSettings = builder.Configuration.GetSection("Jwt");
-
 var validIssuers = jwtSettings.GetSection("Issuer").Get<IEnumerable<string>>() ?? [];
 var validAudiences = jwtSettings.GetSection("Audience").Get<IEnumerable<string>>() ?? [];
 
@@ -65,10 +64,12 @@ if (app.Environment.IsDevelopment())
 }
 
 // CORS
+var origin = builder.Configuration.GetValue<string>("ClientBaseUrl") ?? string.Empty;
 app.UseCors(corsPolicyBuilder => corsPolicyBuilder
+    .WithOrigins(origin)
+    .AllowCredentials()
     .AllowAnyHeader()
-    .AllowAnyMethod()
-    .AllowAnyOrigin());
+    .AllowAnyMethod());
 
 app.UseRouting();
 
