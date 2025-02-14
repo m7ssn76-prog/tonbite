@@ -3,25 +3,18 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Tonbite.Api.Data;
 using Tonbite.Api.Identity;
-using Tonbite.Api.Models;
+using Tonbite.Api.Model;
 using JwtRegisteredClaimNames = Microsoft.IdentityModel.JsonWebTokens.JwtRegisteredClaimNames;
 
 namespace Tonbite.Api.Http.Services;
 
-public class UserHttpService : IUserHttpService
+public class UserHttpService(IConfiguration configuration, ApplicationDbContext context) : IUserHttpService
 {
-    private readonly IConfiguration _configuration;
-    private readonly ApplicationDbContext _context;
-
-    public UserHttpService(IConfiguration configuration, ApplicationDbContext context)
-    {
-        _configuration = configuration;
-        _context = context;
-    }
-
+    /// <inheritdoc /> 
     public string GenerateAccessToken(int userId, string email, string isAdmin)
     {
         var claims = new List<Claim>
@@ -32,7 +25,7 @@ public class UserHttpService : IUserHttpService
             new (IdentityData.AdminUserClaimName, isAdmin)
         };
         
-        var jwtSecret = _configuration["Jwt:Key"];
+        var jwtSecret = configuration["Jwt:Key"];
         if (string.IsNullOrEmpty(jwtSecret))
         {
             throw new InvalidOperationException("JWT secret key is not configured.");
@@ -43,8 +36,8 @@ public class UserHttpService : IUserHttpService
 
         
         var token = new JwtSecurityToken(
-            issuer: _configuration["ServerBaseUrl"],
-            audience: _configuration["ClientBaseUrl"],
+            issuer: configuration["ServerBaseUrl"],
+            audience: configuration["ClientBaseUrl"],
             claims: claims,
             expires: DateTime.UtcNow.AddMinutes(15),
             signingCredentials: credentials
@@ -54,6 +47,7 @@ public class UserHttpService : IUserHttpService
         return tokenHandler.WriteToken(token);
     }
 
+    /// <inheritdoc /> 
     public string GenerateRefreshToken()
     {
         var randomNumber = new byte[32];
@@ -62,6 +56,7 @@ public class UserHttpService : IUserHttpService
         return Convert.ToBase64String(randomNumber);
     }
 
+    /// <inheritdoc /> 
     public void Create(UserRegister form)
     {
         var passwordHasher = new PasswordHasher<User>();
@@ -76,8 +71,33 @@ public class UserHttpService : IUserHttpService
         
         user.Password = passwordHasher.HashPassword(user, form.Password);
 
-        _context.Add(user);
-        _context.Add(role);
-        _context.SaveChanges();
+        context.Add(user);
+        context.Add(role);
+        context.SaveChanges();
+    }
+
+    /// <inheritdoc /> 
+    public Task<User?> GetUser(string email)
+    {
+        return context.Users
+            .Where(u => u.Email == email)
+            .Include(u => u.Roles)
+            .Include(u => u.Courses)
+            .FirstOrDefaultAsync();
+    }
+
+    /// <inheritdoc /> 
+    public Task<UserProps?> GetUserProps(string email)
+    {
+        return context.Users
+            .Where(x => x.Email == email)
+            .Select(x => new UserProps
+            {
+                Id = x.Id,
+                Username = x.Username,
+                Email = x.Email,
+                Bio = x.Bio
+            })
+            .FirstOrDefaultAsync();
     }
 }
