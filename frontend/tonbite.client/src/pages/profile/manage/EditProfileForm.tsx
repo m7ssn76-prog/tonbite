@@ -1,4 +1,5 @@
-import { Button, Input, Textarea } from "@heroui/react";
+import { Button } from "@heroui/button";
+import { Input,Textarea } from "@heroui/input";
 import { UserSchema, UserType } from "../../../states";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,6 +16,7 @@ export const EditProfileForm = ({user}: {user: UserType}) => {
         setMessage("");
         if (!await confirmAction()) return;
 
+        form.id = user.id;
         const response = await UserService.Update(form);
         if (response != undefined)
             setMessage(response);

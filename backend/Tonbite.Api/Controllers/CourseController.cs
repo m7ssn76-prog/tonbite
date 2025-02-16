@@ -16,8 +16,8 @@ public class CourseController(ApplicationDbContext context, ICourseHttpService s
         [FromBody] CourseProps props,
         [FromServices] IUserHttpService userService)
     {
-        var email = HttpContext.User.Claims.Single(x => x.Type == ClaimTypes.Email).Value;
-        var user = await userService.GetUser(email);
+        var id = long.Parse(HttpContext.User.Claims.Single(x => x.Type == ClaimTypes.NameIdentifier).Value);
+        var user = await userService.GetUser(id);
         if (user == null) return NotFound("User not found.");
         
         context.Add(service.Create(props, user));
@@ -27,22 +27,22 @@ public class CourseController(ApplicationDbContext context, ICourseHttpService s
     }
     
     [HttpGet]
-    [Route("{id:int}")]
-    public IActionResult Get([FromRoute] int id)
+    [Route("{id:long}")]
+    public IActionResult Get([FromRoute] long id)
     {
         return Ok();
     }
 
     [HttpPut]
-    [Route("{id:int}")]
-    public IActionResult Update([FromRoute] int id)
+    [Route("{id:long}")]
+    public IActionResult Update([FromRoute] long id)
     {
         return Ok();
     }
 
     [HttpDelete]
-    [Route("{id:int}")]
-    public IActionResult Delete([FromRoute] int id)
+    [Route("{id:long}")]
+    public IActionResult Delete([FromRoute] long id)
     {
         return Ok();
     }

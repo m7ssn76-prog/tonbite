@@ -15,7 +15,7 @@ namespace Tonbite.Api.Http.Services;
 public class UserHttpService(IConfiguration configuration, ApplicationDbContext context) : IUserHttpService
 {
     /// <inheritdoc /> 
-    public string GenerateAccessToken(int userId, string email, string isAdmin)
+    public string GenerateAccessToken(long userId, string email, string isAdmin)
     {
         var claims = new List<Claim>
         {
@@ -77,20 +77,20 @@ public class UserHttpService(IConfiguration configuration, ApplicationDbContext 
     }
 
     /// <inheritdoc /> 
-    public Task<User?> GetUser(string email)
+    public Task<User?> GetUser(long id)
     {
         return context.Users
-            .Where(u => u.Email == email)
+            .Where(u => u.Id == id)
             .Include(u => u.Roles)
             .Include(u => u.Courses)
             .FirstOrDefaultAsync();
     }
 
     /// <inheritdoc /> 
-    public Task<UserProps?> GetUserProps(string email)
+    public Task<UserProps?> GetUserProps(long id)
     {
         return context.Users
-            .Where(x => x.Email == email)
+            .Where(x => x.Id == id)
             .Select(x => new UserProps
             {
                 Id = x.Id,
