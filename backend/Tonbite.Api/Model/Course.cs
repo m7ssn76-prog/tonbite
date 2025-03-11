@@ -1,4 +1,6 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace Tonbite.Api.Model;
 
@@ -8,8 +10,15 @@ public class Course : CourseProps, IEntity
     [Key]
     public long Id { get; set; }
     
+    [NotMapped]
+    public long? UserId => Owner.Id;
+    
     /// <summary> Course owner. </summary>
-    public required User Owner { get; set; }
+    [JsonIgnore]
+    public User Owner { get; init; } = null!;
+    
+    /// <summary> List of course steps. </summary>
+    public List<CourseStep>? Steps { get; set; }
 }
 
 /// <summary>
@@ -24,7 +33,7 @@ public class CourseProps
     
     /// <summary> Short course description. </summary>
     [Required(ErrorMessage = "Course Description is required.")]
-    [MaxLength(10000, ErrorMessage = "Maximum length is {1}")]
+    [MaxLength(1000, ErrorMessage = "Maximum length is {1}")]
     public required string Bio { get; set; }
     
     /// <summary> Wallet send transaction to. </summary>
@@ -35,4 +44,12 @@ public class CourseProps
     
     /// <summary> DateTime when course was created. </summary>
     public DateTime Created { get; set; }
+    
+    public Visibility Visibility { get; set; }
+}
+
+public enum Visibility
+{
+    Private = 0,
+    Public = 1
 }

@@ -1,27 +1,43 @@
 import { NavLink } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { UserType } from "../../states";
-import { UserService } from "../../services";
 import { CircularProgress } from "@heroui/progress";
+import { CourseList } from "../../components";
+import { Divider } from "@heroui/divider";
+import { useAuth } from "../../provider/AuthProvider.tsx";
+import {useEffect, useState} from "react";
+import { CourseType } from "../../states";
+import {UserService} from "../../services";
 
 export const ProfilePage = () => {
-    const [user, getUser] = useState<UserType | undefined>();
+    const [courses, setCourses] = useState<CourseType[]>();
+    const { client } = useAuth();
 
     useEffect(() => {
-        UserService.Get().then((res) => getUser(res));
-    }, []);
+        if (client?.id) {
+            UserService
+                .GetCourses(client.id)
+                .then(res => setCourses(res));
+        }
+    }, [client?.id]);
 
-    return(
+    return (
         <main>
-            { user != undefined ? (
+            { client != undefined ? (
                     <div>
-                        <h2>{user.username ?? user.email}</h2>
+                        <NavLink to={"manage"} title={"Manage profile"}>Manage</NavLink>
+                        <h2>{client.username ?? client.email}</h2>
+                        <Divider />
+                        <div className={"p-6"}>
+                            {courses?.length ? (
+                                <CourseList data={courses} showStatus={true} />
+                            ) : (
+                                <p>No courses yet</p>
+                            )}
+                        </div>
                     </div>
                 ) : (
                     <CircularProgress className={"justify-self-center"} />
                 )
             }
-            <NavLink to={"manage"} title={"Manage profile"}>Manage</NavLink>
         </main>
     );
 }

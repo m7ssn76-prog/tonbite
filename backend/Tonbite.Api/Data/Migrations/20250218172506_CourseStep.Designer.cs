@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Tonbite.Api.Data;
@@ -11,9 +12,11 @@ using Tonbite.Api.Data;
 namespace Tonbite.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250218172506_CourseStep")]
+    partial class CourseStep
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -48,9 +51,6 @@ namespace Tonbite.Api.Migrations
 
                     b.Property<double?>("Price")
                         .HasColumnType("double precision");
-
-                    b.Property<int>("Visibility")
-                        .HasColumnType("integer");
 
                     b.Property<string>("WalletAddress")
                         .HasColumnType("text");
@@ -109,17 +109,20 @@ namespace Tonbite.Api.Migrations
                     b.Property<DateTime>("Expires")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long>("OwnerId")
-                        .HasColumnType("bigint");
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)");
 
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("OwnerId");
+                    b.HasIndex("UserId");
 
                     b.ToTable("RefreshTokens");
                 });
@@ -136,12 +139,12 @@ namespace Tonbite.Api.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<long>("OwnerId")
+                    b.Property<long>("UserId")
                         .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OwnerId");
+                    b.HasIndex("UserId");
 
                     b.ToTable("Roles");
                 });
@@ -200,24 +203,24 @@ namespace Tonbite.Api.Migrations
 
             modelBuilder.Entity("Tonbite.Api.Model.RefreshToken", b =>
                 {
-                    b.HasOne("Tonbite.Api.Model.User", "Owner")
+                    b.HasOne("Tonbite.Api.Model.User", "User")
                         .WithMany()
-                        .HasForeignKey("OwnerId")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Owner");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Tonbite.Api.Model.Role", b =>
                 {
-                    b.HasOne("Tonbite.Api.Model.User", "Owner")
+                    b.HasOne("Tonbite.Api.Model.User", "User")
                         .WithMany("Roles")
-                        .HasForeignKey("OwnerId")
+                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Owner");
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Tonbite.Api.Model.Course", b =>

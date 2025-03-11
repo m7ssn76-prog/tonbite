@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Tonbite.Api.Data;
 using Tonbite.Api.Model;
 
 namespace Tonbite.Api.Controllers;
@@ -10,7 +11,7 @@ namespace Tonbite.Api.Controllers;
 public partial class UserController
 {
     [HttpPost("register")]
-    public IActionResult RegisterUser([FromBody] UserRegister request)
+    public async Task<IActionResult> RegisterUser([FromBody] UserRegister request)
     {
         if (!ModelState.IsValid) 
             return BadRequest("User is not valid.");
@@ -21,7 +22,7 @@ public partial class UserController
 
         try 
         {
-            service.Create(request);
+            await service.Create(request);
         }
         catch (Exception e)
         {
@@ -49,15 +50,15 @@ public partial class UserController
         if (result == PasswordVerificationResult.Failed)
             return Unauthorized("Invalid username or password.");
 
-
         // Tokens
         var isAdmin = user.Roles!.Exists(r => r.Name == nameof(Roles.Admin));
-        var accessToken = service.GenerateAccessToken(user.Id, user.Email, isAdmin.ToString());
+        var isCreator = user.Roles!.Exists(r => r.Name == nameof(Roles.Creator));
+        var accessToken = service.GenerateAccessToken(user.Id, user.Email, isAdmin, isCreator);
         var refreshToken = new RefreshToken
         {
             Token = service.GenerateRefreshToken(),
             Expires = DateTime.UtcNow.AddHours(12),
-            User = user
+            Owner = user
         };
         
         // Save
@@ -104,7 +105,7 @@ public partial class UserController
             return Unauthorized("Refresh token is not provided.");
         
         var storedToken = context.RefreshTokens
-            .Include(t => t.User)
+            .Include(t => t.Owner)
             .ThenInclude(user => user.Roles)
             .FirstOrDefault(t => t.Token == refreshToken);
 
@@ -113,13 +114,18 @@ public partial class UserController
         
         if (storedToken.Expires < DateTime.UtcNow)
         {
-            context.RefreshTokens.Remove(storedToken);
-            context.SaveChanges();
+            context.DeleteAsync(storedToken);
+            Response.Cookies.Delete("refreshToken", new CookieOptions
+            {
+                Secure = true,
+                SameSite = SameSiteMode.None
+            });
             return Unauthorized("User session has expired.");
         }
         
-        var isAdmin = storedToken.User.Roles!.Exists(r => r.Name == nameof(Roles.Admin));
-        var accessToken = service.GenerateAccessToken(storedToken.User.Id, storedToken.User.Email, isAdmin.ToString());
+        var isAdmin = storedToken.Owner.Roles!.Exists(r => r.Name == nameof(Roles.Admin));
+        var isCreator = storedToken.Owner.Roles!.Exists(r => r.Name == nameof(Roles.Creator));
+        var accessToken = service.GenerateAccessToken(storedToken.Owner.Id, storedToken.Owner.Email, isAdmin, isCreator);
         return Ok(new { accessToken });
     }
 
@@ -146,5 +152,21 @@ public partial class UserController
         await context.SaveChangesAsync();
         
         return Ok("Password changed successfully.");
+    }
+    
+    [Authorize]
+    [HttpPost("{id:long}/role/creator")]
+    public async Task<IActionResult> BecomeCreator([FromRoute] long id)
+    {
+        var user = context.Users
+            .Include(x => x.Roles)
+            .FirstOrDefault(x => x.Id == id);
+
+        user!.Roles ??= [];
+        if (!user.Roles.Exists(x => x.Name == nameof(Roles.Creator)))
+            user.Roles?.Add(new() { Name = nameof(Roles.Creator), Owner = user });
+
+        await context.UpdateAsync(user);
+        return Ok("User became creator.");
     }
 }

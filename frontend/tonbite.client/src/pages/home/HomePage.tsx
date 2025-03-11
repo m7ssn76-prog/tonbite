@@ -1,6 +1,9 @@
 export const HomePage = () => {
-
     return (
-        <>Home page</>
+        <>
+            Home page
+            <div className={"flex justify-center"}>
+            </div>
+        </>
     );
 };

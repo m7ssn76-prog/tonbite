@@ -5,13 +5,25 @@ import { useAuth } from "../../provider/AuthProvider.tsx";
 import { Icons } from "../../utils";
 import { Icon } from "../icon/Icon.tsx";
 
+const publicItems = [
+    {
+        name: "Home",
+        path: "/",
+    },
+]
+
+const protectedItems = [
+    {
+        name: "Create",
+        path: "/create",
+    },
+]
+
 export const AppNavbar = () => {
-    const { isAuthenticated, logout } = useAuth();
+    const { client, isAuthenticated, logout } = useAuth();
     const menuItems = [
-        {
-            name: "Home",
-            path: "/",
-        },
+        ...publicItems,
+        ...(client?.roles?.find(x => x.name === "Creator" || x.name === "Admin") ? protectedItems : []),
     ];
 
     return (
@@ -19,7 +31,7 @@ export const AppNavbar = () => {
             <NavbarContent>
                 <NavbarMenuToggle className="sm:hidden" />
                 <NavbarBrand>
-                    <h2>Tonbite</h2>
+                    <h2 className={"text-2xl font-bold"}>Tonbite</h2>
                 </NavbarBrand>
             </NavbarContent>
             <NavbarContent className={"max-sm:hidden"} justify={"center"}>
@@ -33,11 +45,14 @@ export const AppNavbar = () => {
                 {isAuthenticated ? (
                     <>
                         <NavbarItem>
-                            <Button onPress={logout}>Logout</Button>
-                        </NavbarItem>
-                        <NavbarItem>
                             <Button as={Link} href={"/profile"} isIconOnly variant={"light"}>
                                 <Icon icon={Icons.PROFILE} />
+                            </Button>
+                        </NavbarItem>
+                        <NavbarItem>
+                            <Button onPress={logout} variant={"light"}>
+                                Logout
+                                <Icon icon={Icons.LOGOUT} />
                             </Button>
                         </NavbarItem>
                     </>

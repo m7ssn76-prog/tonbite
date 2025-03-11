@@ -15,14 +15,15 @@ namespace Tonbite.Api.Http.Services;
 public class UserHttpService(IConfiguration configuration, ApplicationDbContext context) : IUserHttpService
 {
     /// <inheritdoc /> 
-    public string GenerateAccessToken(long userId, string email, string isAdmin)
+    public string GenerateAccessToken(long userId, string email, bool isAdmin, bool isCreator)
     {
         var claims = new List<Claim>
         {
             new (JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
             new (JwtRegisteredClaimNames.NameId, userId.ToString()),
             new (JwtRegisteredClaimNames.Email, email),
-            new (IdentityData.AdminUserClaimName, isAdmin)
+            new (IdentityData.AdminUserClaimName, isAdmin.ToString()),
+            new (IdentityData.CreatorUserClaimName, isCreator.ToString())
         };
         
         var jwtSecret = configuration["Jwt:Key"];
@@ -57,7 +58,7 @@ public class UserHttpService(IConfiguration configuration, ApplicationDbContext 
     }
 
     /// <inheritdoc /> 
-    public void Create(UserRegister form)
+    public Task Create(UserRegister form)
     {
         var passwordHasher = new PasswordHasher<User>();
         
@@ -66,14 +67,15 @@ public class UserHttpService(IConfiguration configuration, ApplicationDbContext 
         var role = new Role
         {
             Name = "User",
-            User = user
+            Owner = user
         };
         
+        user.Roles ??= [];
         user.Password = passwordHasher.HashPassword(user, form.Password);
 
-        context.Add(user);
-        context.Add(role);
-        context.SaveChanges();
+        context.Users.Add(user);
+        context.Roles.Add(role);
+        return context.SaveChangesAsync();
     }
 
     /// <inheritdoc /> 
@@ -82,22 +84,26 @@ public class UserHttpService(IConfiguration configuration, ApplicationDbContext 
         return context.Users
             .Where(u => u.Id == id)
             .Include(u => u.Roles)
-            .Include(u => u.Courses)
             .FirstOrDefaultAsync();
     }
 
     /// <inheritdoc /> 
-    public Task<UserProps?> GetUserProps(long id)
+    public Task<UserProps?> GetUserProps(long id, bool courses, bool roles)
     {
         return context.Users
-            .Where(x => x.Id == id)
+            .Include(x => x.Roles)!
+            .ThenInclude(x => x.Owner)
+            .Include(x => x.Courses)!
+            .ThenInclude(x => x.Owner)
             .Select(x => new UserProps
             {
                 Id = x.Id,
                 Username = x.Username,
                 Email = x.Email,
-                Bio = x.Bio
+                Bio = x.Bio,
+                Roles = roles ? x.Roles : null,
+                Courses = courses ? x.Courses : null,
             })
-            .FirstOrDefaultAsync();
+            .FirstOrDefaultAsync(x => x.Id == id);
     }
 }
