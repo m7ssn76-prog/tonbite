@@ -41,22 +41,21 @@ public class CourseController(ApplicationDbContext context, ICourseHttpService s
     
     [HttpGet]
     [Route("{id:long}")]
-    public async Task<Course?> Get([FromRoute] long id)
-    {
-        return await context.Courses
+    public async Task<Course?> Get([FromRoute] long id) 
+        => await context.Courses
             .Include(x => x.Owner)
             .Include(x => x.Steps)
             .FirstOrDefaultAsync(x => x.Id == id);
-    }
 
     [HttpPut]
     [Route("{id:long}")]
     [RequiresOneOfClaim(IdentityData.CreatorUserClaimName, "True", IdentityData.AdminUserClaimName, "True")]
-    public async Task<IActionResult> Update([FromRoute] long id, [FromBody] Course course)
+    public async Task<ActionResult<Course>> Update([FromRoute] long id, [FromBody] Course form)
     {
         if (!ModelState.IsValid) return BadRequest();
-        await context.UpdateAsync(course);
-        return Ok(await context.UpdateAsync(course));
+        var user = context.Users.FirstOrDefault(x => x.Id == form.UserId);
+        form.Owner = user;
+        return Ok(await context.UpdateAsync(form));
     }
 
     [HttpDelete]
