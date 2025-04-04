@@ -79,31 +79,12 @@ public class UserHttpService(IConfiguration configuration, ApplicationDbContext 
     }
 
     /// <inheritdoc /> 
-    public Task<User?> GetUser(long id)
+    public async Task<User?> GetUser(long id, bool roles = true)
     {
-        return context.Users
-            .Where(u => u.Id == id)
-            .Include(u => u.Roles)
-            .FirstOrDefaultAsync();
-    }
+        var query = context.Users.AsQueryable();
 
-    /// <inheritdoc /> 
-    public Task<UserProps?> GetUserProps(long id, bool courses, bool roles)
-    {
-        return context.Users
-            .Include(x => x.Roles)!
-            .ThenInclude(x => x.Owner)
-            .Include(x => x.Courses)!
-            .ThenInclude(x => x.Owner)
-            .Select(x => new UserProps
-            {
-                Id = x.Id,
-                Username = x.Username,
-                Email = x.Email,
-                Bio = x.Bio,
-                Roles = roles ? x.Roles : null,
-                Courses = courses ? x.Courses : null,
-            })
-            .FirstOrDefaultAsync(x => x.Id == id);
+        if (roles) query = query.Include(x => x.Roles);
+        
+        return await query.FirstOrDefaultAsync(x => x.Id == id);
     }
 }
