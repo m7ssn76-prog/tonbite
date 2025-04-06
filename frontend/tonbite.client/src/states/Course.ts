@@ -1,6 +1,6 @@
 import { z, ZodType } from "zod";
 import { CourseStepType } from "./CourseStep.ts";
-import {UserCourseType} from "./UserCourse.ts";
+import { UserCourseType } from "./UserCourse.ts";
 
 export enum Visibility {
     private = 0,
@@ -21,7 +21,6 @@ export type CourseType = {
     walletAddress?: string;
     price?: number;
     created?: string;
-    userId?: number;
     visibility?: Visibility;
     steps?: CourseStepType[];
     users?: UserCourseType[];
