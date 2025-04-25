@@ -1,6 +1,7 @@
-import { ProtectedRoute } from "../components";
+import { ProtectedRoute, CourseLayout } from "../components";
 import {
     HomePage,
+    BrowsePage,
     LoginPage,
     NotFoundError,
     ProfileManagePage,
@@ -39,6 +40,10 @@ export const authorizedRoutes = [
         element: <ProtectedRoute />,
         children: [
             {
+              path: "/browse",
+              element: <BrowsePage />,
+            },
+            {
               path: "/profile",
               element: <ProfilePage />,
             },
@@ -52,11 +57,17 @@ export const authorizedRoutes = [
             },
             {
                 path: "/courses/:id",
-                element: <CoursePage />,
-            },
-            {
-                path: "/courses/:id/create-step",
-                element: <CreateCourseStepPage />,
+                element: <CourseLayout />,
+                children: [
+                    {
+                        index: true,
+                        element: <CoursePage />,
+                    },
+                    {
+                        path: "create-step",
+                        element: <CreateCourseStepPage />,
+                    },
+                ]
             },
         ],
     },

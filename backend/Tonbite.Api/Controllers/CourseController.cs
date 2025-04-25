@@ -1,7 +1,9 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Tonbite.Api.Data;
+using Tonbite.Api.Extensions;
 using Tonbite.Api.Http;
 using Tonbite.Api.Identity;
 using Tonbite.Api.Model;
@@ -33,9 +35,21 @@ public class CourseController(ApplicationDbContext context, ICourseHttpService s
     }
 
     [HttpGet]
-    public IActionResult Get()
+    public async Task<ActionResult<IList<Course>>> Get([FromQuery] QuerySort sort, [FromQuery] QueryFilter filter)
     {
-        return Ok();
+        var total = await context.Courses
+            .AsQueryable()
+            .ApplyCourseFiltering(filter)
+            .CountAsync();
+        
+        var courses = await context.Courses
+            .AsQueryable()
+            .ApplyCourseSorting(sort)
+            .ApplyPaging(filter.Page, filter.DefaultPageSize)
+            .ApplyCourseFiltering(filter)
+            .ToListAsync();
+
+        return Ok(new { total, courses }); 
     }
     
     [HttpGet]
@@ -52,8 +66,13 @@ public class CourseController(ApplicationDbContext context, ICourseHttpService s
                 x.UserId == userId &&
                 x.Status == UserCourseStatus.Creator) == null)
             return Forbid();
+
+        if (course?.Users?.FirstOrDefault(x => x.UserId == userId) != null) 
+            return course;
         
-        return await service.Get(id, steps);
+        course!.Steps = [];
+        return course;
+
     }
 
     [HttpPut]
