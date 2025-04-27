@@ -1,9 +1,12 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Tonbite.Api.Data;
 using Tonbite.Api.Http;
+using Tonbite.Api.Identity;
 using Tonbite.Api.Model;
+using Tonbite.Api.Model.Utils;
 
 namespace Tonbite.Api.Controllers;
 
@@ -14,10 +17,16 @@ public class CourseStepController(ApplicationDbContext context, ICourseStepHttpS
 {
     [HttpGet]
     [Route("{id:long}")]
-    public async Task<CourseStep?> Get([FromRoute] long id) 
-        => await context.CourseSteps
-            .Include(x => x.Course)
-            .FirstOrDefaultAsync(x => x.Id == id);
+    public async Task<CourseStep?> Get([FromRoute] long id, [FromServices] IUserHttpService userService)
+    {
+        var userId = long.Parse(HttpContext.User.Claims.Single(x => x.Type == ClaimTypes.NameIdentifier).Value);
+        var user =  await userService.GetUser(userId);
+        
+        var step = await service.Get(id);
+        var course = step?.Course;
+
+        return course?.Users?.FirstOrDefault(x => x.User == user) != null || user.IsAdmin() ? step : null;
+    }
 
     [HttpPost]
     public async Task<ActionResult<CourseStep>> Create([FromBody] CourseStepProps props)
@@ -25,5 +34,17 @@ public class CourseStepController(ApplicationDbContext context, ICourseStepHttpS
         var course = await context.Courses.FirstOrDefaultAsync(x => x.Id == props.ParentId);
         if (course == null) return BadRequest();
         return await context.CreateAsync(service.Create(props, course));
+    }
+
+    [HttpDelete]
+    [Route("{id:long}")]
+    [RequiresOneOfClaim(IdentityData.CreatorUserClaimName, "True", IdentityData.AdminUserClaimName, "True")]
+    public async Task<ActionResult<long?>> Delete([FromRoute] long id)
+    {
+        var step = context.CourseSteps.FirstOrDefault(x => x.Id == id);
+        if (step != null)
+            await context.DeleteAsync(step);
+        
+        return step?.Id;
     }
 }

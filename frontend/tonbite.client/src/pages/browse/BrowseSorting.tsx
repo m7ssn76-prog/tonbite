@@ -1,35 +1,32 @@
 import {SortProps} from "../../services/extensions/SortProps.ts";
 
 // UI Components
-import {Dropdown, DropdownItem, DropdownMenu, DropdownTrigger} from "@heroui/dropdown";
-import {Button} from "@heroui/button";
+import {Select, SelectItem} from "@heroui/select";
+import {ChangeEvent} from "react";
 
 interface BrowseSortingProps {
+    selected: string;
     onSort: (sortBy: SortProps) => void;
 }
 
-export const BrowseSorting = ({onSort}: BrowseSortingProps) => {
-    const setSorting = (key: string) => {
+export const BrowseSorting = ({selected, onSort}: BrowseSortingProps) => {
+    const setSorting = (e: ChangeEvent<HTMLSelectElement>) => {
+        const newKey = e.target.value;
         const sort: SortProps = {
-            desc: key === "newest",
+            desc: newKey === "newest",
         };
 
         onSort(sort);
     }
 
     return (
-        <>
-            <Dropdown>
-                <DropdownTrigger>
-                    <Button>
-                        Sort By
-                    </Button>
-                </DropdownTrigger>
-                <DropdownMenu onAction={(key) => setSorting(key.toString())}>
-                    <DropdownItem key={"newest"}>Newest</DropdownItem>
-                    <DropdownItem key={"oldest"}>Oldest</DropdownItem>
-                </DropdownMenu>
-            </Dropdown>
-        </>
+        <Select isRequired size={"sm"}
+                label="Sort by"
+                selectedKeys={[selected]}
+                onChange={setSorting}
+                className={"max-w-56"}>
+            <SelectItem key={"newest"}>Newest</SelectItem>
+            <SelectItem key={"oldest"}>Oldest</SelectItem>
+        </Select>
     );
 }

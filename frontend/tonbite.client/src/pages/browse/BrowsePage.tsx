@@ -51,15 +51,24 @@ export const BrowsePage = () => {
     }
 
     return (
-        <main className={"space-between"}>
+        <div className={"flex flex-col h-full gap-6"}>
             <SearchBar value={filter.searchKey} onSearch={ApplySearch} />
-            <BrowseSorting onSort={ApplySorting} />
-            <BrowseFilters onApply={ApplyFilters} />
+            <span className={"flex items-center justify-end space-x-4"}>
+                <BrowseSorting selected={sorting.desc ? "newest" : "oldest"} onSort={ApplySorting} />
+                <BrowseFilters current={filter} onApply={ApplyFilters} />
+            </span>
 
-            <div className={"flex justify-center"}>
+            <h2 className={"text-start text-2xl font-bold"}>Available Courses</h2>
+
+            <div className={"flex justify-center pt-6 border-t"}>
                 <CourseList data={courses} showStatus={false} />
             </div>
-            {courses.length > 0 && (<Pagination variant={"bordered"} page={page} onChange={setPage} total={(Math.ceil((total / 15)))} />)}
-        </main>
+            {courses.length > 0 && (<Pagination variant={"bordered"}
+                                                page={page}
+                                                onChange={setPage}
+                                                total={(Math.ceil((total / 15)))}
+                                                className={"flex mt-auto justify-center"} />
+            )}
+        </div>
     );
 }

@@ -10,4 +10,22 @@ export class CourseStepService {
             return undefined;
         }
     }
+
+    public static async get(id: string | undefined): Promise<CourseStepType | undefined> {
+        try {
+            const result = await api.get(`/course-steps/${id}`);
+            return result.data as CourseStepType;
+        } catch {
+            return undefined;
+        }
+    }
+
+    public static async delete(id: number | undefined): Promise<string | undefined> {
+        try {
+            const result = await api.delete(`/course-steps/${id}`);
+            return result.data;
+        } catch {
+            return undefined;
+        }
+    }
 }
