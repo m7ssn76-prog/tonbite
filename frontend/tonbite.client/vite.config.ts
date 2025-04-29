@@ -14,5 +14,18 @@ export default defineConfig({
     postcss: {
       plugins: [tailwindcss()],
     },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor': ['react', 'react-dom', 'react-router-dom'],
+          'ui': ['@heroui/react', 'framer-motion'],
+          'editor': ['react-quill']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000,
+    sourcemap: false
   }
 })
