@@ -2,6 +2,7 @@ export class Icons
 {
     static readonly ADD = "add";
     static readonly APPLY = "check";
+    static readonly BACK = "chevron_left";
     static readonly BROWSE = "feature_search";
     static readonly CANCEL = "close";
     static readonly CREATE = "add_circle";
@@ -19,4 +20,5 @@ export class Icons
     static readonly LINK = "link";
     static readonly GITHUB = "code";
     static readonly REPORT = "report";
+    static readonly OWNER = "article_person";
 }
